@@ -1,3 +1,0 @@
-[submodule "Vendor/SSZipArchive"]
-	path = Vendor/SSZipArchive
-	url = https://github.com/soffes/ssziparchive.git
