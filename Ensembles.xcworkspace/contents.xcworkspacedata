@@ -7,7 +7,4 @@
    <FileRef
       location = "group:Framework/Ensembles Mac.xcodeproj">
    </FileRef>
-   <FileRef
-      location = "group:Examples/Idiomatic/Idiomatic.xcodeproj">
-   </FileRef>
 </Workspace>
