@@ -178,12 +178,6 @@
 
 - (void)storeAttributeChangeForDescription:(NSAttributeDescription *)propertyDesc newValue:(id)newValue
 {
-    NSAttributeDescription *attribute = (id)propertyDesc;
-    if ([attribute valueTransformerName]) {
-        NSValueTransformer *valueTransformer = [NSValueTransformer valueTransformerForName:attribute.valueTransformerName];
-        newValue = [valueTransformer transformedValue:newValue];
-    }
-    
     // Put data bigger than 10KB or so in an external file
     if ([newValue isKindOfClass:[NSData class]] && [(NSData *)newValue length] > 10e3) {
         NSAssert(self.eventStore, @"Storing large data attribute requires event store");
@@ -280,17 +274,6 @@
     }
     else if (self.value) {
         returnValue = self.value == [NSNull null] ? nil : self.value;
-    }
-    
-    if (attribute.valueTransformerName) {
-        NSValueTransformer *valueTransformer = [NSValueTransformer valueTransformerForName:attribute.valueTransformerName];
-        if (!valueTransformer) {
-            CDELog(CDELoggingLevelWarning, @"Failed to retrieve value transformer: %@", attribute.valueTransformerName);
-            returnValue = nil;
-        }
-        else {
-            returnValue = [valueTransformer reverseTransformedValue:returnValue];
-        }
     }
     
     return returnValue;
