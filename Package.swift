@@ -1,4 +1,4 @@
-// swift-tools-version:5.2
+// swift-tools-version:5.3
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -21,10 +21,15 @@ let package = Package(
         .target(
             name: "Ensembles",
             dependencies: [],
-            path: "Framework/Source"),
+            resources: [
+                .process("Resources/CDEEventStoreModel.xcdatamodeld")
+            ]),
         .testTarget(
             name: "EnsemblesTests",
             dependencies: ["Ensembles"],
-            path: "Framework/Tests"),
+            resources: [
+                .process("Resources/CDEStoreModificationEventTestsModel.xcdatamodeld"),
+                .copy("Integrator Test Fixtures")
+            ]),
     ]
 )
