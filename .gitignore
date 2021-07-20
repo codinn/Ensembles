@@ -22,3 +22,5 @@ xcuserdata
 DerivedData
 .idea/
 *.xccheckout
+
+.swiftpm
