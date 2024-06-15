@@ -245,14 +245,9 @@ extern NSString * const CDEManagedObjectContextSaveNotificationKey;
 ///
 
 /**
- The file URL to the SQLite persistent store that is to be synced.
+ The description used whenever the framework adds an `NSPersistentStore` instance referencing the main SQLite store.
  */
-@property (nonatomic, strong, readonly) NSURL *storeURL;
-
-/**
- The options used whenever the framework adds an `NSPersistentStore` instance referencing the main SQLite store.
- */
-@property (nonatomic, strong, readonly) NSDictionary *persistentStoreOptions;
+@property (nonatomic, strong, readonly) NSPersistentStoreDescription *storeDescription;
 
 /**
  The file URL of the managed object model file used for the persistent store.
@@ -302,7 +297,7 @@ extern NSString * const CDEManagedObjectContextSaveNotificationKey;
  @param modelURL A file URL for the location of the compiled (momd, mom) model file used in the persistent store.
  @param cloudFileSystem The cloud file system object used to transfer files between devices.
  */
-- (instancetype)initWithEnsembleIdentifier:(NSString *)identifier persistentStoreURL:(NSURL *)storeURL managedObjectModelURL:(NSURL *)modelURL cloudFileSystem:(id <CDECloudFileSystem>)cloudFileSystem;
+- (instancetype)initWithEnsembleIdentifier:(NSString *)identifier storeDescription: (NSPersistentStoreDescription*)storeDescription managedObjectModelURL:(NSURL *)modelURL cloudFileSystem:(id <CDECloudFileSystem>)cloudFileSystem;
 
 /**
  Initializes an ensemble.
@@ -316,7 +311,7 @@ extern NSString * const CDEManagedObjectContextSaveNotificationKey;
  @param cloudFileSystem The cloud file system object used to transfer files between devices.
  @param dataRootURL The file URL to the root directory used by the ensemble to store transaction logs and other metadata. Passing nil will cause the default directory to be used.
  */
-- (instancetype)initWithEnsembleIdentifier:(NSString *)identifier persistentStoreURL:(NSURL *)storeURL persistentStoreOptions:(NSDictionary *)options managedObjectModelURL:(NSURL *)modelURL cloudFileSystem:(id <CDECloudFileSystem>)cloudFileSystem localDataRootDirectoryURL:(NSURL *)dataRootURL;
+- (instancetype)initWithEnsembleIdentifier:(NSString *)identifier storeDescription: (NSPersistentStoreDescription*)storeDescription managedObjectModelURL:(NSURL *)modelURL cloudFileSystem:(id <CDECloudFileSystem>)cloudFileSystem localDataRootDirectoryURL:(NSURL *)dataRootURL;
 
 
 ///

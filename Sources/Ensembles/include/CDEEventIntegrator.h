@@ -19,9 +19,8 @@ typedef void (^CDEEventIntegratorDidSaveBlock)(NSManagedObjectContext *savingCon
 
 @interface CDEEventIntegrator : NSObject
 
-@property (nonatomic, strong, readonly) NSURL *storeURL;
+@property (nonatomic, strong, readonly) NSPersistentStoreDescription *storeDescription;
 @property (nonatomic, strong, readonly) NSManagedObjectModel *managedObjectModel;
-@property (nonatomic, strong) NSDictionary *persistentStoreOptions;
 @property (nonatomic, strong, readonly) CDEEventStore *eventStore;
 @property (nonatomic, weak, readwrite) CDEPersistentStoreEnsemble *ensemble;
 @property (nonatomic, copy, readwrite) CDEEventIntegratorShouldSaveBlock shouldSaveBlock;
@@ -30,7 +29,7 @@ typedef void (^CDEEventIntegratorDidSaveBlock)(NSManagedObjectContext *savingCon
 
 @property (readonly) NSManagedObjectContext *managedObjectContext;
 
-- (instancetype)initWithStoreURL:(NSURL *)newStoreURL managedObjectModel:(NSManagedObjectModel *)model eventStore:(CDEEventStore *)newEventStore;
+- (instancetype)initWithStoreDescription:(NSPersistentStoreDescription*)newStoreDescription managedObjectModel:(NSManagedObjectModel *)model eventStore:(CDEEventStore *)newEventStore;
 
 - (void)mergeEventsWithCompletion:(CDECompletionBlock)completion;
 

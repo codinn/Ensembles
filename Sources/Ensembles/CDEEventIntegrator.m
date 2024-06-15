@@ -35,29 +35,26 @@
     BOOL saveOccurredDuringMerge;
 }
 
-@synthesize storeURL = storeURL;
+@synthesize storeDescription = storeDescription;
 @synthesize managedObjectContext = managedObjectContext;
 @synthesize managedObjectModel = managedObjectModel;
 @synthesize eventStore = eventStore;
 @synthesize shouldSaveBlock = shouldSaveBlock;
 @synthesize didSaveBlock = didSaveBlock;
 @synthesize failedSaveBlock = failedSaveBlock;
-@synthesize persistentStoreOptions = persistentStoreOptions;
-
 
 #pragma mark Initialization
 
-- (instancetype)initWithStoreURL:(NSURL *)newStoreURL managedObjectModel:(NSManagedObjectModel *)model eventStore:(CDEEventStore *)newEventStore
+- (instancetype)initWithStoreDescription:(NSPersistentStoreDescription*)newStoreDescription managedObjectModel:(NSManagedObjectModel *)model eventStore:(CDEEventStore *)newEventStore
 {
     self = [super init];
     if (self) {
-        storeURL = [newStoreURL copy];
+        storeDescription = newStoreDescription;
         managedObjectModel = model;
         eventStore = newEventStore;
         shouldSaveBlock = NULL;
         didSaveBlock = NULL;
         failedSaveBlock = NULL;
-        persistentStoreOptions = nil;
         queue = dispatch_queue_create("com.mentalfaculty.ensembles.eventintegrator", DISPATCH_QUEUE_SERIAL);
     }
     return self;
@@ -116,7 +113,7 @@
     
     NSArray *stores = context.persistentStoreCoordinator.persistentStores;
     for (NSPersistentStore *store in stores) {
-        NSURL *url1 = [self.storeURL URLByStandardizingPath];
+        NSURL *url1 = [self.storeDescription.URL URLByStandardizingPath];
         NSURL *url2 = [store.URL URLByStandardizingPath];
         if ([url1 isEqual:url2]) {
             saveOccurredDuringMerge = YES;
@@ -135,14 +132,23 @@
     newEventUniqueId = nil;
     
     // Setup a context for accessing the main store
-    NSError *error = nil;
     NSPersistentStoreCoordinator *coordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:managedObjectModel];
-    NSPersistentStore *persistentStore = [coordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:self.persistentStoreOptions error:&error];
-    if (!persistentStore) {
-        [self failWithCompletion:completion error:error];
-        return;
-    }
     
+    __weak typeof(self) weakSelf = self;
+    __strong typeof(coordinator) strongCoordinator = coordinator;
+    [coordinator addPersistentStoreWithDescription:storeDescription completionHandler:^(NSPersistentStoreDescription * _Nonnull desc, NSError * _Nonnull error) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (error != nil) {
+            [strongSelf failWithCompletion:completion error:error];
+            return;
+        }
+        
+        [strongSelf _mergeEventsWithCoordinator:strongCoordinator completion:completion];
+    }];
+}
+
+
+- (void)_mergeEventsWithCoordinator:(NSPersistentStoreCoordinator *)coordinator completion:(CDECompletionBlock)completion {
     self.managedObjectContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType];
     [self.managedObjectContext performBlockAndWait:^{
         self.managedObjectContext.persistentStoreCoordinator = coordinator;

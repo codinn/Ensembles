@@ -14,19 +14,17 @@
 
 @implementation CDEPersistentStoreImporter
 
-@synthesize persistentStorePath = persistentStorePath;
+@synthesize storeDescription = storeDescription;
 @synthesize eventStore = eventStore;
 @synthesize managedObjectModel = managedObjectModel;
-@synthesize persistentStoreOptions = persistentStoreOptions;
 
-- (id)initWithPersistentStoreAtPath:(NSString *)newPath managedObjectModel:(NSManagedObjectModel *)newModel eventStore:(CDEEventStore *)newEventStore;
+- (id)initWithPersistentStoreDescription:(NSPersistentStoreDescription*)newStoreDescription managedObjectModel:(NSManagedObjectModel *)newModel eventStore:(CDEEventStore *)newEventStore;
 {
     self = [super init];
     if (self) {
-        persistentStorePath = [newPath copy];
+        storeDescription = [newStoreDescription copy];
         eventStore = newEventStore;
         managedObjectModel = newModel;
-        persistentStoreOptions = nil;
     }
     return self;
 }
@@ -34,8 +32,6 @@
 - (void)importWithCompletion:(CDECompletionBlock)completion
 {
     CDELog(CDELoggingLevelVerbose, @"Importing persistent store");
-
-    __block NSError *error = nil;
     
     NSManagedObjectContext *context = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType];
     [context performBlockAndWait:^{
@@ -43,23 +39,34 @@
         context.persistentStoreCoordinator = coordinator;
         context.undoManager = nil;
         
-        NSError *localError = nil;
-        NSURL *storeURL = [NSURL fileURLWithPath:self->persistentStorePath];
-        NSDictionary *options = self.persistentStoreOptions;
-        if (!options) options = @{NSMigratePersistentStoresAutomaticallyOption: @YES, NSInferMappingModelAutomaticallyOption: @YES};
+        if (!storeDescription.options) {
+            [storeDescription setOption:@YES forKey:NSMigratePersistentStoresAutomaticallyOption];
+            [storeDescription setOption:@YES forKey:NSInferMappingModelAutomaticallyOption];
+        }
+        
         [(id)coordinator lock];
-        [coordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:options error:&localError];
-        [(id)coordinator unlock];
-        error = localError;
+        
+        __weak typeof(self) weakSelf = self;
+        __strong typeof(coordinator) strongCoordinator = coordinator;
+        
+        [coordinator addPersistentStoreWithDescription:storeDescription completionHandler:^(NSPersistentStoreDescription * _Nonnull desc, NSError * _Nonnull error) {
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            
+            [(id)strongCoordinator unlock];
+            
+            if (error) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (completion) completion(error);
+                });
+                return;
+            }
+            
+            [strongSelf _importWithCompletionWithContext:context completion:completion];
+        }];
     }];
-    
-    if (error) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (completion) completion(error);
-        });
-        return;
-    }
-    
+}
+
+- (void)_importWithCompletionWithContext:(NSManagedObjectContext*)context completion:(CDECompletionBlock)completion {
     NSManagedObjectContext *eventContext = eventStore.managedObjectContext;
     CDEEventBuilder *eventBuilder = [[CDEEventBuilder alloc] initWithEventStore:self.eventStore];
     eventBuilder.ensemble = self.ensemble;

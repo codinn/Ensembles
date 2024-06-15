@@ -42,7 +42,7 @@ NSString * const CDEManagedObjectContextSaveNotificationKey = @"managedObjectCon
 @property (nonatomic, strong, readwrite) CDECloudManager *cloudManager;
 @property (nonatomic, strong, readwrite) id <CDECloudFileSystem> cloudFileSystem;
 @property (nonatomic, strong, readwrite) NSString *ensembleIdentifier;
-@property (nonatomic, strong, readwrite) NSURL *storeURL;
+@property (nonatomic, strong, readwrite) NSPersistentStoreDescription* storeDescription;
 @property (nonatomic, strong, readwrite) NSManagedObjectModel *managedObjectModel;
 @property (nonatomic, strong, readwrite) NSURL *managedObjectModelURL;
 @property (atomic, assign, readwrite, getter = isLeeched) BOOL leeched;
@@ -64,8 +64,7 @@ NSString * const CDEManagedObjectContextSaveNotificationKey = @"managedObjectCon
 
 @synthesize cloudFileSystem = cloudFileSystem;
 @synthesize ensembleIdentifier = ensembleIdentifier;
-@synthesize storeURL = storeURL;
-@synthesize persistentStoreOptions = persistentStoreOptions;
+@synthesize storeDescription = storeDescription;
 @synthesize cloudManager = cloudManager;
 @synthesize eventStore = eventStore;
 @synthesize saveMonitor = saveMonitor;
@@ -77,15 +76,15 @@ NSString * const CDEManagedObjectContextSaveNotificationKey = @"managedObjectCon
 
 #pragma mark - Initialization and Deallocation
 
-- (instancetype)initWithEnsembleIdentifier:(NSString *)identifier persistentStoreURL:(NSURL *)newStoreURL persistentStoreOptions:(NSDictionary *)storeOptions managedObjectModelURL:(NSURL *)modelURL cloudFileSystem:(id <CDECloudFileSystem>)newCloudFileSystem localDataRootDirectoryURL:(NSURL *)eventDataRootURL
+- (instancetype)initWithEnsembleIdentifier:(NSString *)identifier storeDescription: (NSPersistentStoreDescription*)storeDescription managedObjectModelURL:(NSURL *)modelURL cloudFileSystem:(id <CDECloudFileSystem>)newCloudFileSystem localDataRootDirectoryURL:(NSURL *)eventDataRootURL
 {
     NSParameterAssert(identifier != nil);
-    NSParameterAssert(newStoreURL != nil);
+    NSParameterAssert(storeDescription != nil);
     NSParameterAssert(modelURL != nil);
     NSParameterAssert(newCloudFileSystem != nil);
     self = [super init];
     if (self) {
-        persistentStoreOptions = storeOptions;
+        self.storeDescription = storeDescription;
         
         operationQueue = [[NSOperationQueue alloc] init];
         operationQueue.maxConcurrentOperationCount = 1;
@@ -96,7 +95,6 @@ NSString * const CDEManagedObjectContextSaveNotificationKey = @"managedObjectCon
         observingIdentityToken = NO;
         
         self.ensembleIdentifier = identifier;
-        self.storeURL = newStoreURL;
         self.managedObjectModelURL = modelURL;
         self.managedObjectModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
         self.cloudFileSystem = newCloudFileSystem;
@@ -109,7 +107,7 @@ NSString * const CDEManagedObjectContextSaveNotificationKey = @"managedObjectCon
         
         [self initializeEventIntegrator];
         
-        self.saveMonitor = [[CDESaveMonitor alloc] initWithStorePath:newStoreURL.path];
+        self.saveMonitor = [[CDESaveMonitor alloc] initWithStorePath:self.storeDescription.URL.path];
         self.saveMonitor.ensemble = self;
         self.saveMonitor.eventStore = eventStore;
         self.saveMonitor.eventIntegrator = self.eventIntegrator;
@@ -127,17 +125,15 @@ NSString * const CDEManagedObjectContextSaveNotificationKey = @"managedObjectCon
     return self;
 }
 
-- (instancetype)initWithEnsembleIdentifier:(NSString *)identifier persistentStoreURL:(NSURL *)url managedObjectModelURL:(NSURL *)modelURL cloudFileSystem:(id <CDECloudFileSystem>)newCloudFileSystem
+- (instancetype)initWithEnsembleIdentifier:(NSString *)identifier storeDescription: (NSPersistentStoreDescription*)storeDescription managedObjectModelURL:(NSURL *)modelURL cloudFileSystem:(id <CDECloudFileSystem>)newCloudFileSystem
 {
-    return [self initWithEnsembleIdentifier:identifier persistentStoreURL:url persistentStoreOptions:nil managedObjectModelURL:modelURL cloudFileSystem:newCloudFileSystem localDataRootDirectoryURL:nil];
+    return [self initWithEnsembleIdentifier:identifier storeDescription:storeDescription managedObjectModelURL:modelURL cloudFileSystem:newCloudFileSystem localDataRootDirectoryURL:nil];
 }
 
 - (void)initializeEventIntegrator
 {
-    NSURL *url = self.storeURL;
-    self.eventIntegrator = [[CDEEventIntegrator alloc] initWithStoreURL:url managedObjectModel:self.managedObjectModel eventStore:self.eventStore];
+    self.eventIntegrator = [[CDEEventIntegrator alloc] initWithStoreDescription:self.storeDescription managedObjectModel:self.managedObjectModel eventStore:self.eventStore];
     self.eventIntegrator.ensemble = self;
-    self.eventIntegrator.persistentStoreOptions = persistentStoreOptions;
     
     __weak typeof(self) weakSelf = self;
     self.eventIntegrator.shouldSaveBlock = ^(NSManagedObjectContext *savingContext, NSManagedObjectContext *reparationContext) {
@@ -367,8 +363,7 @@ NSString * const CDEManagedObjectContextSaveNotificationKey = @"managedObjectCon
             [self.delegate persistentStoreEnsembleWillImportStore:self];
         }
         
-        CDEPersistentStoreImporter *importer = [[CDEPersistentStoreImporter alloc] initWithPersistentStoreAtPath:self.storeURL.path managedObjectModel:self.managedObjectModel eventStore:self.eventStore];
-        importer.persistentStoreOptions = self.persistentStoreOptions;
+        CDEPersistentStoreImporter *importer = [[CDEPersistentStoreImporter alloc] initWithPersistentStoreDescription:self.storeDescription managedObjectModel:self.managedObjectModel eventStore:self.eventStore];
         importer.ensemble = self;
         [importer importWithCompletion:^(NSError *error) {
             [self endObservingSaveNotifications];
@@ -501,7 +496,7 @@ NSString * const CDEManagedObjectContextSaveNotificationKey = @"managedObjectCon
     NSManagedObjectContext *context = notif.object;
     NSArray *stores = context.persistentStoreCoordinator.persistentStores;
     for (NSPersistentStore *store in stores) {
-        NSURL *url1 = [self.storeURL URLByStandardizingPath];
+        NSURL *url1 = [self.storeDescription.URL URLByStandardizingPath];
         NSURL *url2 = [store.URL URLByStandardizingPath];
         if ([url1 isEqual:url2]) {
             saveOccurredDuringImport = YES;
@@ -584,7 +579,7 @@ NSString * const CDEManagedObjectContextSaveNotificationKey = @"managedObjectCon
         }
         
         NSFileManager *fileManager = [[NSFileManager alloc] init];
-        if (![fileManager fileExistsAtPath:self->storeURL.path]) {
+        if (![fileManager fileExistsAtPath:self->storeDescription.URL.path]) {
             NSError *error = [NSError errorWithDomain:CDEErrorDomain code:CDEErrorCodeMissingStore userInfo:nil];
             next(error, NO);
             return;
