@@ -303,7 +303,6 @@ extern NSString * const CDEManagedObjectContextSaveNotificationKey;
  @param cloudFileSystem The cloud file system object used to transfer files between devices.
  */
 - (instancetype)initWithEnsembleIdentifier:(NSString *)identifier persistentStoreURL:(NSURL *)storeURL managedObjectModelURL:(NSURL *)modelURL cloudFileSystem:(id <CDECloudFileSystem>)cloudFileSystem;
-- (instancetype)initWithEnsembleIdentifier:(NSString *)identifier persistentStoreURL:(NSURL *)storeURL managedObjectModel:(NSManagedObjectModel *)model managedObjectModelURL:(NSURL *)modelURL cloudFileSystem:(id <CDECloudFileSystem>)cloudFileSystem;
 
 /**
  Initializes an ensemble.
@@ -318,7 +317,7 @@ extern NSString * const CDEManagedObjectContextSaveNotificationKey;
  @param dataRootURL The file URL to the root directory used by the ensemble to store transaction logs and other metadata. Passing nil will cause the default directory to be used.
  */
 - (instancetype)initWithEnsembleIdentifier:(NSString *)identifier persistentStoreURL:(NSURL *)storeURL persistentStoreOptions:(NSDictionary *)options managedObjectModelURL:(NSURL *)modelURL cloudFileSystem:(id <CDECloudFileSystem>)cloudFileSystem localDataRootDirectoryURL:(NSURL *)dataRootURL;
-- (instancetype)initWithEnsembleIdentifier:(NSString *)identifier persistentStoreURL:(NSURL *)storeURL persistentStoreOptions:(NSDictionary *)options managedObjectModel:(NSManagedObjectModel *)model managedObjectModelURL:(NSURL *)modelURL cloudFileSystem:(id <CDECloudFileSystem>)cloudFileSystem localDataRootDirectoryURL:(NSURL *)dataRootURL;
+
 
 ///
 /// @name Leeching and Deleeching
