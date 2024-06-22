@@ -7,6 +7,7 @@
 //
 
 #import <XCTest/XCTest.h>
+#import "CDEEventIntegrator.h"
 #import "CDEIntegratorTestCase.h"
 
 @interface CDEEventIntegrator (TestMethods)

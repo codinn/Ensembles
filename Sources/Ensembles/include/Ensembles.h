@@ -38,3 +38,11 @@
 #import "CDERevisionSet.h"
 #import "CDERebaser.h"
 #import "CDEEventMigrator.h"
+
+#import "CDEEventIntegrator.h"
+#import "CDERevisionManager.h"
+#import "CDEDataFile.h"
+#import "CDECloudManager.h"
+#import "CDEBaselineConsolidator.h"
+#import "CDEEventFile.h"
+#import "CDEPersistentStoreImporter.h"
